@@ -2,6 +2,38 @@
   (:require [clj-http.client :as client])
   (:gen-class))
 
+(defn to-int [x]
+  (try
+    (condp #(% %2) x
+      integer? x
+      string? (Integer/parseInt x)
+      float? (int x)
+      nil)
+    (catch Exception e nil)))
+
+(defn try-to-int
+  [x]
+  (or (to-int x)
+      (if (nil? x)
+        ""
+        x)))
+
+(defn to-float [x]
+  (try
+    (condp #(% %2) x
+      float? x
+      string? (Float/parseFloat x)
+      integer? (float x)
+      nil)
+    (catch Exception e nil)))
+
+(defn try-to-float
+  [x]
+  (or (to-float x)
+      (if (nil? x)
+        ""
+        x)))
+
 (defn zpid->filename
   [zpid]
   (str "./resources/html/" zpid))
@@ -79,7 +111,7 @@
 #_ (def hh (fetch-html-for-zpid 9399518))
 #_ (def hh (fetch-html-for-zpid 9398387))
 
-(parse-html hh)
+#_ (parse-html hh)
 
 (defn parse-html
   [html]
@@ -87,53 +119,70 @@
     (let [[_ mo yr price] (re-find #"Last sold: (.*?) (\d+) for \$(.*?)<"
                                    html)
           mo' (mo-abbrv->num mo)
-          sold-date (format "%s/01/%s" mo' yr)
-          price' (-> price
-                     (clojure.string/replace "," ""))]
-      [mo' yr price']
+          sold-date (if yr
+                      (format "%s/01/%s" mo' yr)
+                      "")
+          price' (or (some-> price
+                             (clojure.string/replace "," ""))
+                     "")]
 
       {:address (some->> html
                          (re-find (hid-field-regex "saddr"))
                          second)
        :estimate (some->> html
                           (re-find #"zestimate\":\"(.*?)\"")
-                          second)
-       :bed (get-value-for-name "bed" html)
-       :bath (get-value-for-name "bath" html)
+                          second
+                          try-to-int)
+       :bed (->> html
+                 (get-value-for-name "bed")
+                 try-to-float)
+       :bath (->> html
+                  (get-value-for-name "bath")
+                  try-to-float)
        :lat (some->> html
                      (re-find #"data-latitude=\"(.*?)\"")
-                     second)
+                     second
+                     try-to-float)
        :lon (some->> html
                      (re-find #"data-longitude=\"(.*?)\"")
-                     second)
+                     second
+                     try-to-float)
        :sqft (some->> html
                       (re-find #"sqft\":\"(.*?)\"")
-                      second)
+                      second
+                      try-to-int)
        :built-yr (some->> html
                           (re-find #"Built in (.*?)<")
-                          second)
+                          second
+                          try-to-int)
        :sold-date sold-date
-       :sold-price price'
+       :sold-price (try-to-int price')
        :lot-sqft (some->> html
                           (re-find #"a lot of (.*?) sqft")
                           second
-                          (#(clojure.string/replace % "," "")))
+                          (#(clojure.string/replace % "," ""))
+                          try-to-int)
        :lot-width (some->> html
                            (re-find #"Lot width: (.*?) ")
-                           second)
+                           second
+                           try-to-int)
        :lot-depth (some->> html
                            (re-find #"Lot depth: (.*?) ")
-                           second)
+                           second
+                           try-to-int)
        :rooms (some->> html
                        (re-find #"Room count: (.*?)<")
-                       second)
+                       second
+                       try-to-int)
        :stories (some->> html
                          (re-find #"Stories: (.*?)<")
-                         second)
+                         second
+                         try-to-int)
        :tax (some->> html
                      (re-find #"<span class=\"vendor-cost\"><strong>\$(.*?)<")
                      second
-                     (#(clojure.string/replace % "," "")))})
+                     (#(clojure.string/replace % "," ""))
+                     try-to-int)})
     (catch Exception e
       (clojure.pprint/pprint e)
       (println "vvvvvvvvvvvv")
@@ -166,6 +215,7 @@
                           )
                      (links->zpid sss)))
      (clojure.pprint/pprint data))
+
 
 
 (defn -main
