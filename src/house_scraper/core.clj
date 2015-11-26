@@ -2,6 +2,38 @@
   (:require [clj-http.client :as client])
   (:gen-class))
 
+
+;; Calculating the distance in kilometers between two points on Earth
+(def earth-radius 3959)
+
+(defn degrees->radians [point]
+  (mapv #(Math/toRadians %) point))
+
+(defn distance-between
+  "Calculate the distance in km between two points on Earth. Each
+   point is a pair of degrees latitude and longitude, in that order."
+  ([p1 p2] (distance-between p1 p2 earth-radius))
+  ([p1 p2 radius]
+     (let [[lat1 long1] (degrees->radians p1)
+           [lat2 long2] (degrees->radians p2)]
+       (* radius
+          (Math/acos (+ (* (Math/sin lat1) (Math/sin lat2))
+                        (* (Math/cos lat1)
+                           (Math/cos lat2)
+                           (Math/cos (- long1 long2)))))))))
+
+(def media-rr [39.914320 -75.394905])
+(def trader-joes [39.917500 -75.388664])
+
+(defn dist-score
+  [d]
+  (->> (cond
+         (> d 2) 2
+         (< d 0.1) 0.1
+         :default d)
+       (/ 0.1)
+       float))
+
 (defn to-int [x]
   (try
     (condp #(% %2) x
@@ -189,6 +221,24 @@
       (println html)
       (println "^^^^^^^^^^^^"))))
 
+(defn process
+  [m]
+  (let [lat (:lat m)
+        lon (:lon m)
+        d-b (fn [dest] (distance-between [lat lon] dest))
+        dist-rr (d-b media-rr)
+        dist-tj (d-b trader-joes)
+        dist-rr-score (dist-score dist-rr)
+        dist-tj-score (dist-score dist-tj)
+        dist-score (+ (* 3 dist-rr-score)
+                      dist-tj-score)]
+    (assoc m
+           :dist-rr dist-rr
+           :dist-tj dist-tj
+           :dist-rr-score dist-rr-score
+           :dist-tj-score dist-tj-score
+           :dist-score dist-score)))
+
 (defn find-links
   [s]
   (->> s
@@ -212,11 +262,11 @@
      (def data (mapv #(-> %
                           sleepy-fetch-html
                           parse-html
-                          )
+                          process)
                      (links->zpid sss)))
      (clojure.pprint/pprint data))
 
-
+(clojure.pprint/pprint (sort-by :dist-score data))
 
 (defn -main
   "I don't do a whole lot ... yet."
