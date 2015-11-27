@@ -27,10 +27,7 @@
 
 (defn dist-score
   [d]
-  (->> (cond
-         (> d 2) 2
-         (< d 0.1) 0.1
-         :default d)
+  (->> (max d 0.1)
        (/ 0.1)
        float))
 
