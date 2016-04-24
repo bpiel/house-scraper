@@ -2,6 +2,8 @@
   (:require [clj-http.client :as client])
   (:gen-class))
 
+(def ppr clojure.pprint/pprint)
+
 
 ;; Calculating the distance in kilometers between two points on Earth
 (def earth-radius 3959)
@@ -320,8 +322,9 @@
 
 (defn ordered-map-entries
   [m ks]
-  (concat (keep #(when (contains? m %)
-                   [% (get m %)])
+  (concat (map #(if (contains? m %)
+                  [% (get m %)]
+                  "")
                 ks)
           (-> (apply dissoc m ks)
               seq)))
@@ -371,7 +374,9 @@
 
 (defn write-csv-ordered
   [houses fname]
-  (write-csv houses fname :address :url :sold-price :sold-date :sqft :lot-sqft :built-yr :bed :bath :rooms :ac :dist-rr :dist-tj))
+  (write-csv houses fname :address :url :sold-price :sold-date :sqft :lot-sqft :built-yr :bed :bath :rooms :ac :dist-rr :dist-tj :sort-key))
+
+
 
 
      (def exclude-ids #{9398720 9419873 9398179 9398203 9419595 9419713 9399381 9399504})
@@ -396,28 +401,35 @@
             distinct
             vec))
 
+     (def data-notes
+       (->> data
+            (mapv #(merge %
+                          (-> % :id notes)))))
+
      (def next
        (->> data
-            (filter #(or (b1-ids (:id %))
+            (remove #(or (exclude-ids (:id %))
+                         (b1-ids (:id %))
                          (b2-ids (:id %))))
             (filter (fn [m]
-                        (and
-#_                         (>= (:bath m)
-                             2)
-#_                         (>= (:bed m)
-                             3)
-                         (>= (:sqft m)
-                             2000)
-                         (>= (:lot-sqft m)
-                             6000)
-#_                         (<= (:dist-rr m)
-                             0.7)
-#_                         (<= (:dist-tj m)
-                             0.75)
-#_                         (<= (:sold-price m)
-                             430000)
-#_                         (<= (or (:tax m) 0)
-                             8000))))))
+                      (and
+                       (< (:bath m)
+                          2)
+                       #_                         (>= (:bed m)
+                                                      3)
+                       #_                         (>= (:sqft m)
+                                                      2000)
+                       #_                         (>= (:lot-sqft m)
+                                                      6000)
+                       #_                         (<= (:dist-rr m)
+                                                      0.7)
+                       #_                         (<= (:dist-tj m)
+                                                      0.75)
+                       #_                         (<= (:sold-price m)
+                                                      430000)
+                       #_                         (<= (or (:tax m) 0)
+                                                      8000))))
+            (sort-by :sqft)))
 
      #_ (def next
           (->> data
@@ -949,3 +961,743 @@ http://www.zillow.com/homes/for_sale/53615986_zpid/3-_beds/249948-650026_price/9
 http://www.zillow.com/homes/for_sale/9399561_zpid/
 
 ")
+
+(def notes
+  {9419872
+   {:address "216 E Lincoln St",
+    :accepted "y",
+    :batch "1",
+    :id 9419872,
+    :notes ""},
+   9398719
+   {:address "424 N Monroe St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398719,
+    :notes ""},
+   9398370
+   {:address "420 S Jackson St",
+    :accepted "y",
+    :batch "1",
+    :id 9398370,
+    :notes ""},
+   9398224
+   {:address "412 W Front St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398224,
+    :notes ""},
+   9399222
+   {:address "228 E Second St",
+    :accepted "y",
+    :batch "1",
+    :id 9399222,
+    :notes ""},
+   9398848
+   {:address "414 S Olive St",
+    :accepted "n",
+    :batch "2",
+    :id 9398848,
+    :notes "scarry yard"},
+   9399499
+   {:address "324 W Third St",
+    :accepted "y",
+    :batch "2",
+    :id 9399499,
+    :notes ""},
+   9399381
+   {:address "426 South Ave",
+    :accepted "y",
+    :batch "2",
+    :id 9399381,
+    :notes "appts?"},
+   87894757
+   {:address "406 N Olive St",
+    :accepted "n",
+    :batch "2",
+    :id 87894757,
+    :notes ""},
+   9399562
+   {:address "18 West St",
+    :accepted "y",
+    :batch "1",
+    :id 9399562,
+    :notes "**or 118**???"},
+   9398543
+   {:address "527 N Lemon St",
+    :accepted "n",
+    :batch "3",
+    :id 9398543,
+    :notes "bumble"},
+   9398101
+   {:address "227 E Fourth St",
+    :accepted "?",
+    :batch "3",
+    :id 9398101,
+    :notes "hard to see"},
+   9398051
+   {:address "344 W Fifth St",
+    :accepted "y",
+    :batch "2",
+    :id 9398051,
+    :notes ""},
+   9398079
+   {:address "110 E Fourth St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398079,
+    :notes ""},
+   9399564
+   {:address "513 W Front St",
+    :accepted "y",
+    :batch "1",
+    :id 9399564,
+    :notes "prob expensive $$"},
+   9398172
+   {:address "22 W Franklin St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398172,
+    :notes ""},
+   9399516
+   {:address "141 E Third St",
+    :accepted "y",
+    :batch "2",
+    :id 9399516,
+    :notes ""},
+   9397989
+   {:address "217 N Edgemont St",
+    :accepted "y",
+    :batch "2",
+    :id 9397989,
+    :notes ""},
+   9398004
+   {:address "220 N Edgemont St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398004,
+    :notes ""},
+   9398491
+   {:address "11 E Jefferson St",
+    :accepted "y",
+    :batch "1",
+    :id 9398491,
+    :notes ""},
+   9399471
+   {:address "234 E Third St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9399471,
+    :notes ""},
+   9398133
+   {:address "113 W Fourth St",
+    :accepted "n",
+    :batch "2",
+    :id 9398133,
+    :notes ""},
+   9399498
+   {:address "320 W Third St",
+    :accepted "y",
+    :batch "3",
+    :id 9399498,
+    :notes "small house. yard ok"},
+   9398435
+   {:address "110 E Jefferson St",
+    :accepted "n",
+    :batch "2",
+    :id 9398435,
+    :notes "duplex"},
+   9399561
+   {:address "24 West St",
+    :accepted "y",
+    :batch "3",
+    :id 9399561,
+    :notes "dreamy"},
+   9398415
+   {:address "414 E Jefferson St",
+    :accepted "y",
+    :batch "2",
+    :id 9398415,
+    :notes ""},
+   9398718
+   {:address "400 N Monroe St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398718,
+    :notes "for rent"},
+   9399517
+   {:address "133 E Third St",
+    :accepted "y",
+    :batch "1",
+    :id 9399517,
+    :notes ""},
+   9398391
+   {:address "426 N Jackson St",
+    :accepted "y",
+    :batch "1",
+    :id 9398391,
+    :notes ""},
+   9419852
+   {:address "100 W Lincoln St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9419852,
+    :notes ""},
+   9399506
+   {:address "211 West St",
+    :accepted "n",
+    :batch "2",
+    :id 9399506,
+    :notes "already discarded from candidates v1?"},
+   9398699
+   {:address "403 N Monroe St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398699,
+    :notes ""},
+   9399515
+   {:address "209 E Third St",
+    :accepted "y",
+    :batch "2",
+    :id 9399515,
+    :notes ""},
+   53615986
+   {:address "512 Parks Edge Ln",
+    :accepted "y",
+    :batch "2",
+    :id 53615986,
+    :notes ""},
+   66899989
+   {:address "315 E Front St",
+    :accepted "n",
+    :batch "2",
+    :id 66899989,
+    :notes ""},
+   9398250
+   {:address "201 E Front St",
+    :accepted "n",
+    :batch "2",
+    :id 9398250,
+    :notes ""},
+   9398443
+   {:address "18 E Jefferson St",
+    :accepted "n",
+    :batch "2",
+    :id 9398443,
+    :notes "tried to sell $875k"},
+   9398202
+   {:address "42 E Front St",
+    :accepted "n",
+    :batch "2",
+    :id 9398202,
+    :notes "no yard"},
+   9398658
+   {:address "207 E Lincoln St",
+    :accepted "y",
+    :batch "1",
+    :id 9398658,
+    :notes ""},
+   9399382
+   {:address "414 South Ave",
+    :accepted "y",
+    :batch "2",
+    :id 9399382,
+    :notes ""},
+   9398050
+   {:address "336 W Fifth St",
+    :accepted "y",
+    :batch "2",
+    :id 9398050,
+    :notes ""},
+   9399481
+   {:address "140 E Third St",
+    :accepted "y",
+    :batch "3",
+    :id 9399481,
+    :notes ""},
+   9399552
+   {:address "1 West St",
+    :accepted "y",
+    :batch "1",
+    :id 9399552,
+    :notes ""},
+   9398235
+   {:address "307 E Front St",
+    :accepted "n",
+    :batch "2",
+    :id 9398235,
+    :notes ""},
+   9398067
+   {:address "525 N Broomall St",
+    :accepted "y",
+    :batch "2",
+    :id 9398067,
+    :notes ""},
+   9398387
+   {:address "406 N Jackson St",
+    :accepted "y",
+    :batch "3",
+    :id 9398387,
+    :notes "rental"},
+   9398055
+   {:address "125 E Fifth St",
+    :accepted "y",
+    :batch "2",
+    :id 9398055,
+    :notes ""},
+   9398698
+   {:address "321 N Monroe St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398698,
+    :notes ""},
+   9398534
+   {:address "339 W Third St",
+    :accepted "y",
+    :batch "3",
+    :id 9398534,
+    :notes ""},
+   2131962370
+   {:address "321 W Second St",
+    :accepted "n",
+    :batch "2",
+    :id 2131962370,
+    :notes "sad yard"},
+   9399563
+   {:address "502 W Front St",
+    :accepted "y",
+    :batch "2",
+    :id 9399563,
+    :notes "$$$$"},
+   9398934
+   {:address "502 N Orange St",
+    :accepted "y",
+    :batch "2",
+    :id 9398934,
+    :notes ""},
+   9398030
+   {:address "140 E Fifth St",
+    :accepted "y",
+    :batch "3",
+    :id 9398030,
+    :notes ""},
+   9398179
+   {:address "435 E Franklin St",
+    :accepted "n",
+    :batch "1.1",
+    :id 9398179,
+    :notes "small yard"},
+   9398933
+   {:address "422 N Orange St",
+    :accepted "y",
+    :batch "2",
+    :id 9398933,
+    :notes ""},
+   9398000
+   {:address "114 N Edgemont St",
+    :accepted "y",
+    :batch "3",
+    :id 9398000,
+    :notes ""},
+   54670838
+   {:address "510 Parks Edge Ln",
+    :accepted "y",
+    :batch "2",
+    :id 54670838,
+    :notes ""},
+   9399518
+   {:address "123 E Third St",
+    :accepted "y",
+    :batch "3",
+    :id 9399518,
+    :notes ""},
+   9399528
+   {:address "321 W Third St",
+    :accepted "?",
+    :batch "3",
+    :id 9399528,
+    :notes "hard to see. front is slope"},
+   9398539
+   {:address "509 N Lemon St",
+    :accepted "y",
+    :batch "2",
+    :id 9398539,
+    :notes ""},
+   9399560
+   {:address "207 West St",
+    :accepted "n",
+    :batch "2",
+    :id 9399560,
+    :notes "already discarded from candidates v1?"},
+   9398056
+   {:address "31 E Fifth St",
+    :accepted "y",
+    :batch "3",
+    :id 9398056,
+    :notes ""},
+   9398695
+   {:address "305 N Monroe St",
+    :accepted "y",
+    :batch "1",
+    :id 9398695,
+    :notes "apts?"},
+   9398378
+   {:address "314 S Jackson St",
+    :accepted "y",
+    :batch "3",
+    :id 9398378,
+    :notes ""},
+   9399510
+   {:address "235 E Third St",
+    :accepted "n",
+    :batch "3",
+    :id 9399510,
+    :notes "no yard"},
+   9398054
+   {:address "133 E Fifth St",
+    :accepted "y",
+    :batch "2",
+    :id 9398054,
+    :notes ""},
+   9398798
+   {:address "409 S Olive St",
+    :accepted "n",
+    :batch "3",
+    :id 9398798,
+    :notes "duplex"},
+   9398035
+   {:address "122 E Fifth St",
+    :accepted "y",
+    :batch "3",
+    :id 9398035,
+    :notes ""},
+   9398053
+   {:address "203 E Fifth St",
+    :accepted "y",
+    :batch "2",
+    :id 9398053,
+    :notes "pool?"},
+   54569659
+   {:address "506 Parks Edge Ln",
+    :accepted "y",
+    :batch "2",
+    :id 54569659,
+    :notes ""},
+   9398374
+   {:address "400 S Jackson St",
+    :accepted "n",
+    :batch "3",
+    :id 9398374,
+    :notes "no yard"},
+   9398434
+   {:address "112 E Jefferson St",
+    :accepted "n",
+    :batch "2",
+    :id 9398434,
+    :notes "yard road"},
+   9398005
+   {:address "318 N Edgemont St",
+    :accepted "y",
+    :batch "3",
+    :id 9398005,
+    :notes ""},
+   9398477
+   {:address "447 E Jefferson St",
+    :accepted "y",
+    :batch "3",
+    :id 9398477,
+    :notes ""},
+   9398930
+   {:address "330 N Orange St",
+    :accepted "y",
+    :batch "2",
+    :id 9398930,
+    :notes ""},
+   9397995
+   {:address "407 N Edgemont St",
+    :accepted "y",
+    :batch "2",
+    :id 9397995,
+    :notes ""},
+   9398203
+   {:address "36 E Front St",
+    :accepted "n",
+    :batch "1.1",
+    :id 9398203,
+    :notes "no yard"},
+   9398797
+   {:address "413 S Olive St",
+    :accepted "y",
+    :batch "1",
+    :id 9398797,
+    :notes ""},
+   9419595
+   {:address "441 S Jackson St",
+    :accepted "n",
+    :batch "1",
+    :id 9419595,
+    :notes ""},
+   9399565
+   {:address "204 West St",
+    :accepted "y",
+    :batch "1",
+    :id 9399565,
+    :notes ""},
+   9398077
+   {:address "116 E 4TH St",
+    :accepted "y",
+    :batch "2",
+    :id 9398077,
+    :notes ""},
+   9398902
+   {:address "407 N Orange St",
+    :accepted "y",
+    :batch "3",
+    :id 9398902,
+    :notes ""},
+   9398492
+   {:address "1 E Jefferson St",
+    :accepted "y",
+    :batch "1",
+    :id 9398492,
+    :notes ""},
+   9399221
+   {:address "230 E Second St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9399221,
+    :notes ""},
+   9398550
+   {:address "116 N Lemon St",
+    :accepted "y",
+    :batch "3",
+    :id 9398550,
+    :notes ""},
+   9399504
+   {:address "400 W Third St",
+    :accepted "n",
+    :batch "1",
+    :id 9399504,
+    :notes "slanty yard"},
+   9398104
+   {:address "217 E Fourth St",
+    :accepted "y",
+    :batch "2",
+    :id 9398104,
+    :notes ""},
+   9398542
+   {:address "505 N Lemon St",
+    :accepted "y",
+    :batch "2",
+    :id 9398542,
+    :notes ""},
+   9399558
+   {:address "201 West St",
+    :accepted "y",
+    :batch "1",
+    :id 9399558,
+    :notes ""},
+   9419594
+   {:address "440 S Jackson St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9419594,
+    :notes "ok-ish backyard"},
+   9398696
+   {:address "309 N Monroe St",
+    :accepted "y",
+    :batch "2",
+    :id 9398696,
+    :notes "apts? ****"},
+   9398371
+   {:address "416 S Jackson St",
+    :accepted "y",
+    :batch "3",
+    :id 9398371,
+    :notes ""},
+   87893707
+   {:address "203 E Third St",
+    :accepted "n",
+    :batch "3",
+    :id 87893707,
+    :notes "small yard"},
+   9399256
+   {:address "225 E Second St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9399256,
+    :notes ""},
+   119187862
+   {:address "316 N Edgemont St",
+    :accepted "y",
+    :batch "2",
+    :id 119187862,
+    :notes ""},
+   87894743
+   {:address "523 N Broomall St",
+    :accepted "y",
+    :batch "2",
+    :id 87894743,
+    :notes ""},
+   9398388
+   {:address "418 N Jackson St",
+    :accepted "y",
+    :batch "1",
+    :id 9398388,
+    :notes ""},
+   9398284
+   {:address "300 Gayley St",
+    :accepted "n",
+    :batch "3",
+    :id 9398284,
+    :notes ""},
+   9397996
+   {:address "420 S Edgemont St",
+    :accepted "y",
+    :batch "1",
+    :id 9397996,
+    :notes ""},
+   9399503
+   {:address "340 W Third St",
+    :accepted "y",
+    :batch "1",
+    :id 9399503,
+    :notes ""},
+   9398170
+   {:address "14 W Franklin St",
+    :accepted "y",
+    :batch "2",
+    :id 9398170,
+    :notes ""},
+   9419713
+   {:address "490 Kirk Ln",
+    :accepted "n",
+    :batch "1",
+    :id 9419713,
+    :notes ""},
+   9398901
+   {:address "401 N Orange St",
+    :accepted "?",
+    :batch "3",
+    :id 9398901,
+    :notes "bump. small yard"},
+   53615987
+   {:address "508 Parks Edge Ln",
+    :accepted "y",
+    :batch "2",
+    :id 53615987,
+    :notes ""},
+   87894687
+   {:address "421 N Orange St",
+    :accepted "n",
+    :batch "2",
+    :id 87894687,
+    :notes "bad yard"},
+   9398544
+   {:address "519 N Lemon St",
+    :accepted "y",
+    :batch "2",
+    :id 9398544,
+    :notes "small yard?"},
+   9421396
+   {:address "671 W Third St",
+    :accepted "n",
+    :batch "3",
+    :id 9421396,
+    :notes "bumble"},
+   9398178
+   {:address "437 E Franklin St",
+    :accepted "y",
+    :batch "2",
+    :id 9398178,
+    :notes ""},
+   9399534
+   {:address "409 Vernon St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9399534,
+    :notes ""},
+   9398076
+   {:address "120 E Fourth St",
+    :accepted "y",
+    :batch "1.1",
+    :id 9398076,
+    :notes ""},
+   9421398
+   {:address "691 W Third St",
+    :accepted "n",
+    :batch "3",
+    :id 9421398,
+    :notes "bumble"},
+   9398001
+   {:address "206 N Edgemont St",
+    :accepted "y",
+    :batch "1",
+    :id 9398001,
+    :notes ""},
+   9398444
+   {:address "2 E Jefferson St",
+    :accepted "y",
+    :batch "1",
+    :id 9398444,
+    :notes ""},
+   9399508
+   {:address "241 E Third St",
+    :accepted "y",
+    :batch "2",
+    :id 9399508,
+    :notes ""},
+   9399262
+   {:address "131 E Second St",
+    :accepted "y",
+    :batch "1",
+    :id 9399262,
+    :notes ""},
+   54670837
+   {:address "504 Parks Edge Ln",
+    :accepted "y",
+    :batch "2",
+    :id 54670837,
+    :notes ""},
+   9399507
+   {:address "300 N Providence Rd",
+    :accepted "y",
+    :batch "2",
+    :id 9399507,
+    :notes ""},
+   9399482
+   {:address "134 E Third St",
+    :accepted "y",
+    :batch "1",
+    :id 9399482,
+    :notes ""},
+   9398169
+   {:address "8 E Franklin St",
+    :accepted "?",
+    :batch "3",
+    :id 9398169,
+    :notes "no ac. <3"},
+   9398419
+   {:address "400 E Jefferson St",
+    :accepted "y",
+    :batch "2",
+    :id 9398419,
+    :notes ""},
+   121149621
+   {:address "416 South Ave",
+    :accepted "n",
+    :batch "2",
+    :id 121149621,
+    :notes "duplex"},
+   9398335
+   {:address "417 S Jackson St",
+    :accepted "?",
+    :batch "2",
+    :id 9398335,
+    :notes "drop yard - push - was on v1?"},
+   9398336
+   {:address "415 S Jackson St",
+    :accepted "?",
+    :batch "3",
+    :id 9398336,
+    :notes "slant?"}})
